@@ -17,7 +17,7 @@ source "$ARIA_SRC/commands/nyx.sh"
 cmd="${1:-help}"; shift || true
 
 case "$cmd" in
-  status)     cmd_status ;;
+  status)     cmd_status "$@" ;;
   khala)      cmd_khala "$@" ;;
   bus)        cmd_khala "$@" ;;   # legacy alias
   nyx)        cmd_nyx "$@" ;;
@@ -30,7 +30,7 @@ case "$cmd" in
     cat <<'HELP'
 aria — Agent-Runtime Integration Architecture CLI
 
-  aria status                         Health check
+  aria status [--json]                Health check (JSON with --json)
   aria khala publish <ch> <msg>       Publish to Khala channel
   aria khala list                     List channels
   aria khala tail <ch> [n]            Recent messages

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# arb registry — runtimes, nodes, agents
+# aria registry — runtimes, nodes, agents
 
 cmd_registry() {
   local sub="${1:-help}"; shift || true
@@ -8,13 +8,13 @@ cmd_registry() {
     nodes)    _reg_nodes ;;
     agents)   _reg_agents ;;
     info)     _reg_info "$@" ;;
-    *)        echo "Usage: arb registry {runtimes|nodes|agents|info <id>}" ;;
+    *)        echo "Usage: aria registry {runtimes|nodes|agents|info <id>}" ;;
   esac
 }
 
 _reg_runtimes() {
   echo "=== Runtimes ==="
-  for f in "$ARB_REGISTRY/runtimes/"*.json; do
+  for f in "$ARIA_REGISTRY/runtimes/"*.json; do
     [[ -f "$f" ]] || continue
     python3 -c "
 import json
@@ -25,7 +25,7 @@ print(f\"  {d.get('id','?'):20s} {d.get('name','?'):35s} {d.get('status','?')}\"
 
 _reg_nodes() {
   echo "=== Nodes ==="
-  for f in "$ARB_REGISTRY/nodes/"*.json; do
+  for f in "$ARIA_REGISTRY/nodes/"*.json; do
     [[ -f "$f" ]] || continue
     local name; name=$(basename "$f" .json)
     local label; label=$(python3 -c "import json; print(json.load(open('$f')).get('name','?'))" 2>/dev/null || echo "?")
@@ -35,7 +35,7 @@ _reg_nodes() {
 
 _reg_agents() {
   echo "=== Agents ==="
-  for dir in "$ARB_REGISTRY/agents/"*/; do
+  for dir in "$ARIA_REGISTRY/agents/"*/; do
     [[ -d "$dir" ]] || continue
     local id; id=$(basename "$dir")
     local mem="N"; [[ -f "$dir/memory/context.md" ]] && mem="Y"
@@ -44,16 +44,16 @@ _reg_agents() {
 }
 
 _reg_info() {
-  local id="${1:?Usage: arb registry info <id>}"
-  for path in "$ARB_REGISTRY/runtimes/$id.json" "$ARB_REGISTRY/nodes/$id.json"; do
+  local id="${1:?Usage: aria registry info <id>}"
+  for path in "$ARIA_REGISTRY/runtimes/$id.json" "$ARIA_REGISTRY/nodes/$id.json"; do
     if [[ -f "$path" ]]; then
       python3 -c "import json; print(json.dumps(json.load(open('$path')), indent=2, ensure_ascii=False))"
       return
     fi
   done
-  if [[ -d "$ARB_REGISTRY/agents/$id" ]]; then
-    [[ -f "$ARB_REGISTRY/agents/$id/AGENT.md" ]] && head -20 "$ARB_REGISTRY/agents/$id/AGENT.md"
-    [[ -f "$ARB_REGISTRY/agents/$id/memory/context.md" ]] && echo "" && cat "$ARB_REGISTRY/agents/$id/memory/context.md"
+  if [[ -d "$ARIA_REGISTRY/agents/$id" ]]; then
+    [[ -f "$ARIA_REGISTRY/agents/$id/AGENT.md" ]] && head -20 "$ARIA_REGISTRY/agents/$id/AGENT.md"
+    [[ -f "$ARIA_REGISTRY/agents/$id/memory/context.md" ]] && echo "" && cat "$ARIA_REGISTRY/agents/$id/memory/context.md"
     return
   fi
   die "'$id' not found in runtimes, nodes, or agents"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# arb bus — channel messaging
+# Legacy: aria bus — same Khala paths as aria khala (prefer: aria khala …)
 
 cmd_bus() {
   local sub="${1:-help}"; shift || true
@@ -7,20 +7,20 @@ cmd_bus() {
     publish)  _bus_publish "$@" ;;
     list)     _bus_list ;;
     tail)     _bus_tail "$@" ;;
-    *)        echo "Usage: arb bus {publish|list|tail}" ;;
+    *)        echo "Usage: aria bus {publish|list|tail}" ;;
   esac
 }
 
 _bus_publish() {
-  local channel="${1:?Usage: arb bus publish <channel> <message>}"
-  local message="${2:?Usage: arb bus publish <channel> <message>}"
-  local from_runtime="${3:-$ARB_RUNTIME}"
+  local channel="${1:?Usage: aria bus publish <channel> <message>}"
+  local message="${2:?Usage: aria bus publish <channel> <message>}"
+  local from_runtime="${3:-$ARIA_RUNTIME}"
 
-  local channel_file="$ARB_BUS_DIR/${channel}.jsonl"
+  local channel_file="$ARIA_KHALA_DIR/${channel}.jsonl"
   mkdir -p "$(dirname "$channel_file")"
 
   local ts; ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  local msg_id="arb-$(date +%Y%m%d-%H%M%S)-${from_runtime}"
+  local msg_id="aria-$(date +%Y%m%d-%H%M%S)-${from_runtime}"
 
   python3 -c "
 import json, sys
@@ -35,18 +35,18 @@ print(json.dumps({
 }
 
 _bus_list() {
-  echo "=== ARB Channels ==="
-  for f in "$ARB_BUS_DIR"/**/*.jsonl; do
+  echo "=== Khala Channels ==="
+  for f in "$ARIA_KHALA_DIR"/**/*.jsonl; do
     [[ -f "$f" ]] || continue
-    local ch; ch=$(echo "$f" | sed "s|$ARB_BUS_DIR/||;s/\.jsonl$//")
+    local ch; ch=$(echo "$f" | sed "s|$ARIA_KHALA_DIR/||;s/\.jsonl$//")
     printf "  %-35s %s msgs\n" "$ch" "$(wc -l < "$f" | tr -d ' ')"
   done
 }
 
 _bus_tail() {
-  local channel="${1:?Usage: arb bus tail <channel> [count]}"
+  local channel="${1:?Usage: aria bus tail <channel> [count]}"
   local count="${2:-5}"
-  local channel_file="$ARB_BUS_DIR/${channel}.jsonl"
+  local channel_file="$ARIA_KHALA_DIR/${channel}.jsonl"
   [[ -f "$channel_file" ]] || die "Channel not found: $channel"
 
   echo "=== Last $count: $channel ==="

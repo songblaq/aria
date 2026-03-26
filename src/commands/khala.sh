@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# aria khala — Khala network messaging (formerly ARB bus)
+# aria khala — Khala channel messaging
 
 cmd_khala() {
   local sub="${1:-help}"; shift || true

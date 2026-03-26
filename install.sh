@@ -45,14 +45,14 @@ echo "  $ARIA_HOME/bin/aria → $PROJECT_DIR/src/aria.sh"
 
 # ── 4. Legacy compat symlinks ──
 echo "[4/6] Legacy compatibility..."
-# ~/.arb → ~/.aria
+# Pre-ARIA app dir name on disk: ~/.arb → ~/.aria
 if [[ -d "$HOME/.arb" && ! -L "$HOME/.arb" ]]; then
   echo "  WARNING: ~/.arb is a real directory. Back it up and create symlink manually."
 else
   ln -sfn "$ARIA_HOME" "$HOME/.arb" 2>/dev/null && echo "  ~/.arb → ~/.aria" || echo "  ~/.arb symlink skipped"
 fi
-# arb → aria khala alias
-ln -sfn "$ARIA_HOME/bin/aria" "$ARIA_HOME/bin/arb" 2>/dev/null && echo "  arb → aria (alias)" || true
+# Legacy CLI name: bin/arb → bin/aria
+ln -sfn "$ARIA_HOME/bin/aria" "$ARIA_HOME/bin/arb" 2>/dev/null && echo "  bin/arb → bin/aria (compatibility)" || true
 
 # ── 5. Install runtime plugins (if requested) ──
 echo "[5/7] Plugins..."
