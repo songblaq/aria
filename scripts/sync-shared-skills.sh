@@ -2,19 +2,18 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.."; pwd)"
-AGENT_HOME="${AGENT_HOME:-$HOME/.agent}"
-ARIA_HOME="${ARIA_HOME:-$HOME/.aria}"
+AGENTS_HOME="${AGENTS_HOME:-$HOME/.agents}"
 CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 CLAUDE_HOME="${CLAUDE_HOME:-$HOME/.claude}"
 
-SHARED_ROOT="$AGENT_HOME/skills"
-AGENT_CONFIG_DIR="$AGENT_HOME/config"
+SHARED_ROOT="$AGENTS_HOME/skills"
+AGENT_CONFIG_DIR="$AGENTS_HOME/config"
 GENERATED_MANIFEST="$AGENT_CONFIG_DIR/skills-manifest.generated.yaml"
 PRIMARY_MANIFEST="$AGENT_CONFIG_DIR/skills-manifest.yaml"
 
 mkdir -p "$SHARED_ROOT" "$AGENT_CONFIG_DIR" \
   "$CODEX_HOME/skills" "$CLAUDE_HOME/skills" \
-  "$ARIA_HOME/runtimes/codex/skills" "$ARIA_HOME/runtimes/claude-code/skills"
+  "$AGENTS_HOME/runtimes/codex/skills" "$AGENTS_HOME/runtimes/claude-code/skills"
 
 declare -a PORTABLE_ITEMS=(
   "agenthive/orchestrator.md|$PROJECT_DIR/shared-skills/agenthive/orchestrator.md"
@@ -50,10 +49,10 @@ add_manifest_entry() {
         path: "$CODEX_HOME/skills/$rel"
       - tool: claude
         path: "$CLAUDE_HOME/skills/$rel"
-      - tool: aria-codex-runtime
-        path: "$ARIA_HOME/runtimes/codex/skills/$rel"
-      - tool: aria-claude-runtime
-        path: "$ARIA_HOME/runtimes/claude-code/skills/$rel"
+      - tool: khala-codex-runtime
+        path: "$AGENTS_HOME/runtimes/codex/skills/$rel"
+      - tool: khala-claude-runtime
+        path: "$AGENTS_HOME/runtimes/claude-code/skills/$rel"
 EOF
 }
 
@@ -64,8 +63,8 @@ shared_root: "$SHARED_ROOT"
 consumers:
   codex: "$CODEX_HOME/skills"
   claude: "$CLAUDE_HOME/skills"
-  aria_codex_runtime: "$ARIA_HOME/runtimes/codex/skills"
-  aria_claude_runtime: "$ARIA_HOME/runtimes/claude-code/skills"
+  khala_codex_runtime: "$AGENTS_HOME/runtimes/codex/skills"
+  khala_claude_runtime: "$AGENTS_HOME/runtimes/claude-code/skills"
 skills:
 EOF
 
@@ -77,8 +76,8 @@ for item in "${PORTABLE_ITEMS[@]}"; do
   link_entry "$source" "$shared"
   link_entry "$shared" "$CODEX_HOME/skills/$rel"
   link_entry "$shared" "$CLAUDE_HOME/skills/$rel"
-  link_entry "$shared" "$ARIA_HOME/runtimes/codex/skills/$rel"
-  link_entry "$shared" "$ARIA_HOME/runtimes/claude-code/skills/$rel"
+  link_entry "$shared" "$AGENTS_HOME/runtimes/codex/skills/$rel"
+  link_entry "$shared" "$AGENTS_HOME/runtimes/claude-code/skills/$rel"
   add_manifest_entry "$rel" "$source" "$shared"
 done
 
@@ -90,8 +89,8 @@ for item in "${OPTIONAL_ITEMS[@]}"; do
   link_entry "$source" "$shared"
   link_entry "$shared" "$CODEX_HOME/skills/$rel"
   link_entry "$shared" "$CLAUDE_HOME/skills/$rel"
-  link_entry "$shared" "$ARIA_HOME/runtimes/codex/skills/$rel"
-  link_entry "$shared" "$ARIA_HOME/runtimes/claude-code/skills/$rel"
+  link_entry "$shared" "$AGENTS_HOME/runtimes/codex/skills/$rel"
+  link_entry "$shared" "$AGENTS_HOME/runtimes/claude-code/skills/$rel"
   add_manifest_entry "$rel" "$source" "$shared"
 done
 

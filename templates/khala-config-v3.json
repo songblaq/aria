@@ -1,0 +1,65 @@
+{
+  "version": "3.2.0",
+  "name": "Agent Khala",
+  "short": "Khala",
+  "home": "~/.agents",
+  "terminology": {
+    "khala": "JSONL append-only messaging substrate (this CLI's primary capability)",
+    "agent": "Installed agent instance (AGENT.md + config.json + memory)",
+    "runtime": "Execution environment (Claude Code, OpenClaw, Codex, ...)",
+    "node": "Physical/logical compute instance"
+  },
+  "substrate": {
+    "home": "~/.agents",
+    "charter": "~/.agents/AGENTS.md",
+    "residents": {
+      "agents": {
+        "version": "1.0.0",
+        "owns": ["agents/**"],
+        "description": "Installed agent instances"
+      },
+      "khala": {
+        "version": "3.2.0",
+        "owns": ["khala/**"],
+        "description": "Messaging substrate"
+      },
+      "skills": {
+        "version": "1.0.0",
+        "owns": ["skills/**"],
+        "description": "Shared skill library"
+      }
+    },
+    "external": {
+      "owl": {
+        "path": "~/.owl",
+        "vault": "~/owl-vault",
+        "description": "LLM Wiki (formerly agent-brain), now external",
+        "project": "~/_/projects/owl"
+      }
+    },
+    "shared": ["skills", "khala"]
+  },
+  "khala": {
+    "backend": "khala",
+    "channels_dir": "~/.agents/khala/channels",
+    "lib_dir": "~/.agents/khala/lib",
+    "default_ttl": 86400,
+    "default_priority": "normal"
+  },
+  "agents": {
+    "agents_dir": "~/.agents/agents",
+    "routing": "~/.agents/agents/routing.json",
+    "prompts_dir": "~/.agents/agents/prompts",
+    "phantoms_dir": "~/.agents/agents/phantoms",
+    "teams": "~/.agents/agents/teams/presets.json"
+  },
+  "runtimes": {},
+  "nodes": {},
+  "inference": {
+    "primary": {
+      "provider": "ollama",
+      "base_url": "http://localhost:11434",
+      "model": ""
+    }
+  }
+}

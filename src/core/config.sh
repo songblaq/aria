@@ -1,16 +1,89 @@
 #!/usr/bin/env bash
-# ARIA Core — paths, constants, helpers
+# Khala Core — substrate paths, constants, helpers
+#
+# As of v3.2.0, this CLI is named "khala". The project was renamed from Aria
+# to Agent Khala because khala (messaging) is the only core capability that
+# remained after agents/skills/owl moved out into their own homes.
+#
+# Substrate layout (~/.agents/):
+# - Substrate root:    $AGENTS_HOME (default: ~/.agents)
+# - Installed agents:  $AGENTS_HOME/agents/     (persistent + phantoms + blaq identity)
+# - Khala messaging:   $AGENTS_HOME/khala/      (shared, khala-provided)
+# - Shared skills:     $AGENTS_HOME/skills/     (shared)
+# - Config:            $AGENTS_HOME/config.json
+# - Charter:           $AGENTS_HOME/AGENTS.md
+#
+# External (no longer in substrate):
+# - owl (formerly agent-brain): ~/.owl/ + ~/owl-vault/  (Karpathy LLM Wiki)
 
-ARIA_HOME="${ARIA_HOME:-$HOME/.aria}"
-ARIA_CONFIG="$ARIA_HOME/config.json"
-ARIA_KHALA_DIR="$ARIA_HOME/khala/channels"
-ARIA_KNOWLEDGE_DB="$ARIA_HOME/knowledge/main.sqlite"
-ARIA_KNOWLEDGE_CLI="$ARIA_HOME/knowledge/lib/oc-knowledge.sh"
-ARIA_REGISTRY="$ARIA_HOME/registry"
-ARIA_AGENTS="$ARIA_HOME/agents"
+# Substrate root resolution (in priority order):
+#   1. $AGENTS_HOME explicit
+#   2. $ARIA_HOME explicit (legacy env input, still honored)
+#   3. ~/.agents if it has the post-migration layout (~/.agents/config.json exists)
+#   4. ~/.aria if legacy layout still in place (pre-v3 installs)
+#   5. default to ~/.agents
+khala_resolve_home() {
+  if [[ -n "${AGENTS_HOME:-}" ]]; then
+    printf '%s\n' "$AGENTS_HOME"; return
+  fi
+  if [[ -n "${ARIA_HOME:-}" ]]; then
+    printf '%s\n' "$ARIA_HOME"; return
+  fi
+  if [[ -f "$HOME/.agents/config.json" ]]; then
+    printf '%s\n' "$HOME/.agents"; return
+  fi
+  if [[ -d "$HOME/.agents/aria" ]]; then
+    # Pre-v3.1 transitional layout
+    printf '%s\n' "$HOME/.agents"; return
+  fi
+  if [[ -d "$HOME/.aria" && ! -L "$HOME/.aria" ]]; then
+    printf '%s\n' "$HOME/.aria"; return
+  fi
+  printf '%s\n' "$HOME/.agents"
+}
 
-aria_detect_runtime() {
+AGENTS_HOME="$(khala_resolve_home)"
+
+# Substrate layout detection:
+# - Flat layout (v3.1+):   config.json at root
+# - Nested layout (v3.0):  aria/config.json
+# - Legacy layout (<v3):   config.json at root (but ~/.aria base)
+if [[ -f "$AGENTS_HOME/config.json" ]]; then
+  KHALA_CONFIG="$AGENTS_HOME/config.json"
+  KHALA_AGENTS_DIR="$AGENTS_HOME/agents"
+elif [[ -d "$AGENTS_HOME/aria" ]]; then
+  # Transitional nested layout
+  KHALA_CONFIG="$AGENTS_HOME/aria/config.json"
+  KHALA_AGENTS_DIR="$AGENTS_HOME/aria/agents"
+else
+  KHALA_CONFIG="$AGENTS_HOME/config.json"
+  KHALA_AGENTS_DIR="$AGENTS_HOME/agents"
+fi
+
+# Blaq (user identity) is a regular agent under agents/blaq/
+KHALA_BLAQ_DIR="$KHALA_AGENTS_DIR/blaq"
+KHALA_BLAQ_SOUL="$KHALA_AGENTS_DIR/blaq/profile/SOUL.md"
+KHALA_BLAQ_USER="$KHALA_AGENTS_DIR/blaq/profile/USER.md"
+
+KHALA_PHANTOMS_DIR="$KHALA_AGENTS_DIR/phantoms"
+KHALA_TEAMS_DIR="$KHALA_AGENTS_DIR/teams"
+KHALA_PROMPTS_DIR="$KHALA_AGENTS_DIR/prompts"
+
+# Shared substrate primitives (top-level, always same path)
+KHALA_CHANNELS_DIR="$AGENTS_HOME/khala/channels"
+KHALA_LIB_DIR="$AGENTS_HOME/khala/lib"
+KHALA_SKILLS_DIR="$AGENTS_HOME/skills"
+
+# Substrate metadata
+KHALA_CHARTER="$AGENTS_HOME/AGENTS.md"
+
+khala_detect_runtime() {
+  if [[ -n "${KHALA_RUNTIME:-}" ]]; then
+    printf '%s\n' "$KHALA_RUNTIME"
+    return
+  fi
   if [[ -n "${ARIA_RUNTIME:-}" ]]; then
+    # Legacy env input
     printf '%s\n' "$ARIA_RUNTIME"
     return
   fi
@@ -34,30 +107,17 @@ aria_detect_runtime() {
   printf '%s\n' "claude-code"
 }
 
-ARIA_RUNTIME="$(aria_detect_runtime)"
-ARIA_VERSION="1.0.0"
-
-# Legacy compat
-ARB_HOME="$ARIA_HOME"
-ARB_CONFIG="$ARIA_CONFIG"
-ARB_BUS_DIR="$ARIA_KHALA_DIR"
-ARB_KNOWLEDGE_DB="$ARIA_KNOWLEDGE_DB"
-ARB_KNOWLEDGE_CLI="$ARIA_KNOWLEDGE_CLI"
-ARB_REGISTRY="$ARIA_REGISTRY"
-ARB_RUNTIME="$ARIA_RUNTIME"
-ARB_VERSION="$ARIA_VERSION"
+KHALA_RUNTIME="$(khala_detect_runtime)"
+KHALA_VERSION="3.2.0"
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
-aria_ensure_home() {
-  mkdir -p "$ARIA_HOME"/{khala/{channels,lib},knowledge/lib,registry/{runtimes,nodes},agents,nyx/prompts,skills,profiles,runtimes}
+# Idempotent skeleton creation. Never touches reserved paths (brain, first-principles).
+khala_ensure_home() {
+  mkdir -p "$AGENTS_HOME"/{bin,agents/{prompts,phantoms,teams,templates},khala/{channels/global,lib},skills}
 }
 
-aria_json_field() {
+khala_json_field() {
   local file="$1" field="$2"
   python3 -c "import json; print(json.load(open('$file')).get('$field',''))" 2>/dev/null
 }
-
-# Aliases for backward compat
-arb_ensure_home() { aria_ensure_home; }
-arb_json_field() { aria_json_field "$@"; }

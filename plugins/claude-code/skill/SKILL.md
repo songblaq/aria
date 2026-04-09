@@ -1,27 +1,42 @@
 ---
-name: arb
-description: "Agent Runtime Bus — arb status, bus, knowledge, registry"
+name: khala
+description: "Agent Khala — JSONL messaging substrate + substrate management CLI"
 metadata:
-  arb:
-    version: "0.1.0"
+  khala:
+    version: "3.2.0"
 ---
 
-# ARB — Agent Runtime Bus
+# Khala — Agent Khala CLI
 
-Runtime 간 에이전트 통신 + 지식 공유.
+JSONL append-only messaging substrate for AI agent runtimes on ~/.agents/.
 
 ## CLI
 
 ```bash
-arb status                        # 전체 상태
-arb bus publish <channel> <msg>   # 메시지 발행
-arb bus tail <channel> [n]        # 최근 메시지
-arb knowledge search <query>      # FTS5 검색
-arb registry runtimes             # 런타임 목록
-arb registry info <id>            # 상세 정보
+# Messaging
+khala publish <ch> <msg>            Publish message to channel
+khala list [--json]                 List all channels
+khala tail <ch> [-n N] [--json]     Show last N messages
+khala get <ch> <id> [--json]        Fetch message by id
+khala search <pattern> [opts]       Full-text search across channels
+khala watch <ch> [--json]           Live tail (Ctrl+C to stop)
+khala plaza-log [opts]              Structured Plaza work log
+khala plaza-check [opts]            Query Plaza records
+
+# Substrate management
+khala init                          Bootstrap ~/.agents/ substrate
+khala status                        Health check
+khala doctor [--quiet]              Validate substrate contract
+khala migrate [--dry-run]           Migrate legacy ~/.aria/ to ~/.agents/
+
+# Inspection
+khala agent {list|show <id>}        Inspect installed agents
+khala runtime {list|register}       Runtime registry
+khala substrate {info|charter}      Substrate metadata
 ```
 
-## 경로
+## Paths
 
-- App data: `~/.arb/`
-- Project: `~/_/projects/agent-runtime-bus/`
+- Substrate: `~/.agents/`
+- Channels: `~/.agents/khala/channels/`
+- Project: `~/_/projects/khala/`

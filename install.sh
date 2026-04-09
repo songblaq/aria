@@ -1,86 +1,112 @@
 #!/usr/bin/env bash
-# ARIA Installer — sets up ~/.aria app data + links CLI
+# Khala Installer — Agent Khala (formerly Aria)
+# Sets up the ~/.agents/ substrate and installs the khala CLI.
+# Idempotent: safe to re-run for upgrades. Never touches reserved paths.
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")"; pwd)"
-ARIA_HOME="${ARIA_HOME:-$HOME/.aria}"
+AGENTS_HOME="${AGENTS_HOME:-${ARIA_HOME:-$HOME/.agents}}"
+KHALA_INSTALL_MODE="${KHALA_INSTALL_MODE:-${ARIA_INSTALL_MODE:-local}}"
 
-echo "=== Installing ARIA (Agent-Runtime Integration Architecture) ==="
-echo "  Project: $PROJECT_DIR"
-echo "  App data: $ARIA_HOME"
+echo "=== Installing Agent Khala ==="
+echo "  Project:   $PROJECT_DIR"
+echo "  Substrate: $AGENTS_HOME"
+echo "  Mode:      $KHALA_INSTALL_MODE"
 echo ""
 
-# ── 1. App data directories ──
-echo "[1/6] Creating app data directories..."
-mkdir -p "$ARIA_HOME"/{bin,khala/{channels,lib},knowledge/{lib,infra,projects,topics},registry/{runtimes,nodes},agents,nyx/prompts,skills,profiles/archetypes,runtimes/{openclaw/{skills,nyx-adapter},claude-code/skills,codex/skills,cursor/skills}}
+# ── 0. Preflight ──────────────────────────────────────────────────────────
+echo "[1/8] Preflight..."
+for cmd in python3 git curl; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "  ERROR: required command not found: $cmd" >&2
+    exit 1
+  fi
+done
+echo "  python3: $(python3 --version 2>&1)"
+echo "  bash:    $BASH_VERSION"
 
-# ── 2. Default config (skip if exists) ──
-echo "[2/6] Config..."
-if [[ ! -f "$ARIA_HOME/config.json" ]]; then
-  cat > "$ARIA_HOME/config.json" <<'CONF'
-{
-  "version": "1.0.0",
-  "name": "Agent-Runtime Integration Architecture",
-  "short": "ARIA",
-  "home": "~/.aria",
-  "khala": { "backend": "clawbus", "channels_dir": "~/.aria/khala/channels", "default_ttl": 86400 },
-  "knowledge": { "backend": "sqlite-fts5", "db": "~/.aria/knowledge/main.sqlite" },
-  "nyx": { "agents_dir": "~/.aria/agents", "prompts_dir": "~/.aria/nyx/prompts", "routing": "~/.aria/nyx/routing.json" },
-  "registry": { "runtimes_dir": "~/.aria/registry/runtimes", "nodes_dir": "~/.aria/registry/nodes" },
-  "inference": { "primary": { "provider": "ollama", "base_url": "http://localhost:11434", "model": "" } },
-  "runtimes": { "openclaw": { "enabled": true }, "claude-code": { "enabled": true }, "codex": { "enabled": false }, "cursor": { "enabled": false } }
-}
-CONF
-  echo "  Created default config"
-else
-  echo "  Config exists, skipping"
+# ── 1. External tool detection ────────────────────────────────────────────
+echo "[2/8] External tools..."
+if [[ -d "$HOME/.owl" ]]; then
+  echo "  ✓ owl detected at ~/.owl/ (external, knowledge layer)"
+fi
+if [[ -d "$HOME/.aria" && ! -L "$HOME/.aria" && ! -f "$AGENTS_HOME/config.json" ]]; then
+  echo "  ⚠ Legacy ~/.aria detected. Run 'khala migrate' after installation."
 fi
 
-# ── 3. Link CLI ──
-echo "[3/6] Linking CLI..."
-chmod +x "$PROJECT_DIR/src/aria.sh"
-mkdir -p "$ARIA_HOME/bin"
-ln -sfn "$PROJECT_DIR/src/aria.sh" "$ARIA_HOME/bin/aria"
-echo "  $ARIA_HOME/bin/aria → $PROJECT_DIR/src/aria.sh"
+# ── 2. Substrate skeleton (additive only, idempotent) ────────────────────
+echo "[3/8] Creating substrate skeleton..."
+mkdir -p "$AGENTS_HOME"/{bin,agents/{prompts,phantoms,teams,templates},khala/{channels/global,lib},skills}
+echo "  $AGENTS_HOME (flat layout)"
 
-# ── 4. Legacy compat symlinks ──
-echo "[4/6] Legacy compatibility..."
-# ~/.arb → ~/.aria
-if [[ -d "$HOME/.arb" && ! -L "$HOME/.arb" ]]; then
-  echo "  WARNING: ~/.arb is a real directory. Back it up and create symlink manually."
+# ── 3. Charter & config (skip if exists) ─────────────────────────────────
+echo "[4/8] Charter & config..."
+if [[ ! -f "$AGENTS_HOME/AGENTS.md" ]]; then
+  if [[ -f "$PROJECT_DIR/templates/AGENTS.md" ]]; then
+    cp "$PROJECT_DIR/templates/AGENTS.md" "$AGENTS_HOME/AGENTS.md"
+    echo "  Created: AGENTS.md (charter)"
+  fi
 else
-  ln -sfn "$ARIA_HOME" "$HOME/.arb" 2>/dev/null && echo "  ~/.arb → ~/.aria" || echo "  ~/.arb symlink skipped"
+  echo "  AGENTS.md exists, preserved"
 fi
-# arb → aria khala alias
-ln -sfn "$ARIA_HOME/bin/aria" "$ARIA_HOME/bin/arb" 2>/dev/null && echo "  arb → aria (alias)" || true
 
-# ── 5. Install runtime plugins (if requested) ──
-echo "[5/7] Plugins..."
+if [[ ! -f "$AGENTS_HOME/config.json" ]]; then
+  if [[ -f "$PROJECT_DIR/templates/khala-config-v3.json" ]]; then
+    cp "$PROJECT_DIR/templates/khala-config-v3.json" "$AGENTS_HOME/config.json"
+    echo "  Created: config.json"
+  fi
+else
+  echo "  config.json exists, preserved"
+fi
+
+# ── 4. Link CLI ──────────────────────────────────────────────────────────
+echo "[5/8] Linking CLI..."
+chmod +x "$PROJECT_DIR/src/khala.sh"
+ln -sfn "$PROJECT_DIR/src/khala.sh" "$AGENTS_HOME/bin/khala"
+ln -sfn "$PROJECT_DIR/src/khala.sh" "$AGENTS_HOME/bin/aria"  # legacy alias
+echo "  $AGENTS_HOME/bin/khala → $PROJECT_DIR/src/khala.sh"
+echo "  $AGENTS_HOME/bin/aria  → (legacy alias)"
+
+# ── 5. Khala helpers (copy from project, preserve existing) ──────────────
+echo "[6/8] Khala helpers..."
+if [[ -d "$PROJECT_DIR/templates/khala-lib" ]]; then
+  cp -an "$PROJECT_DIR/templates/khala-lib/." "$AGENTS_HOME/khala/lib/"
+  echo "  Helpers copied to khala/lib/"
+else
+  echo "  No khala-lib templates (skipping)"
+fi
+
+# ── 6. Plugins ───────────────────────────────────────────────────────────
+# Export AGENTS_HOME so plugin install scripts and the khala CLI they invoke
+# resolve to the correct substrate (not whatever the user's env defaults to).
+export AGENTS_HOME
+echo "[7/8] Plugins..."
 for plugin_dir in "$PROJECT_DIR"/plugins/*/; do
   [[ -d "$plugin_dir" ]] || continue
   local_install="$plugin_dir/install.sh"
   if [[ -x "$local_install" ]]; then
-    echo "  Installing plugin: $(basename "$plugin_dir")"
-    bash "$local_install" "$ARIA_HOME"
-  else
-    echo "  Skipping $(basename "$plugin_dir") (no install.sh)"
+    echo "  Installing: $(basename "$plugin_dir")"
+    AGENTS_HOME="$AGENTS_HOME" bash "$local_install" "$AGENTS_HOME" || echo "    (plugin returned non-zero, continuing)"
   fi
 done
 
-# ── 6. Seed shared portable skills ──
-echo "[6/7] Shared portable skills..."
-bash "$PROJECT_DIR/scripts/sync-shared-skills.sh"
-
-# ── 7. PATH hint ──
-echo "[7/7] PATH setup..."
-if echo "$PATH" | grep -q "$ARIA_HOME/bin"; then
-  echo "  Already in PATH"
+# ── 7. Verification + PATH hint ──────────────────────────────────────────
+echo "[8/8] Verification..."
+if "$AGENTS_HOME/bin/khala" doctor --quiet 2>/dev/null; then
+  echo "  doctor: OK"
 else
-  echo "  Add to your shell rc:"
-  echo "    export PATH=\"$ARIA_HOME/bin:\$PATH\""
+  echo "  doctor: warnings (run 'khala doctor' for details)"
 fi
 
 echo ""
-echo "=== ARIA installed ==="
-echo "  Run: aria status"
-echo "  Or:  $ARIA_HOME/bin/aria status"
+if echo "$PATH" | grep -q "$AGENTS_HOME/bin"; then
+  echo "  PATH: $AGENTS_HOME/bin already on PATH"
+else
+  echo "  Add to your shell rc:"
+  echo "    export PATH=\"$AGENTS_HOME/bin:\$PATH\""
+fi
+
+echo ""
+echo "=== Agent Khala installed ==="
+echo "  Run: khala status"
+echo "  Or:  $AGENTS_HOME/bin/khala status"
